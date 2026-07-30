@@ -3,7 +3,7 @@ import { Link, useNavigate, useOutletContext } from 'react-router-dom';
 import { getProducts } from '../services/productService';
 import { ProductGrid } from '../components/product/ProductGrid';
 import { CATEGORIES } from '../utils/formatters';
-import { Search, ArrowRight, ShieldCheck, Tag, PlusCircle, Sparkles, TrendingUp, RefreshCw } from 'lucide-react';
+import { Search, ArrowRight, ShieldCheck, Tag, PlusCircle, Sparkles, TrendingUp, RefreshCw, Star, ShoppingBag } from 'lucide-react';
 
 export const HomePage = () => {
   const navigate = useNavigate();
@@ -11,7 +11,9 @@ export const HomePage = () => {
   const showToast = outletContext?.showToast;
 
   const [searchQuery, setSearchQuery] = useState('');
+  const [featuredProducts, setFeaturedProducts] = useState([]);
   const [newestProducts, setNewestProducts] = useState([]);
+  const [availableProducts, setAvailableProducts] = useState([]);
   const [soldProducts, setSoldProducts] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -22,13 +24,20 @@ export const HomePage = () => {
   const fetchHomepageData = async () => {
     setLoading(true);
     try {
-      // Fetch available products
+      // 1. Fetch Featured / Curated products
+      const featRes = await getProducts({ limit: 4, sort: 'newest' });
+      if (featRes.success) {
+        setFeaturedProducts(featRes.data);
+      }
+
+      // 2. Fetch Newest Available Listings
       const availRes = await getProducts({ availableOnly: 'true', limit: 8, sort: 'newest' });
       if (availRes.success) {
         setNewestProducts(availRes.data);
+        setAvailableProducts(availRes.data);
       }
 
-      // Fetch recently sold products for showcase
+      // 3. Fetch Recently Sold Products for dedicated showcase
       const soldRes = await getProducts({ status: 'Sold', limit: 4, sort: 'newest' });
       if (soldRes.success) {
         setSoldProducts(soldRes.data);
@@ -48,9 +57,9 @@ export const HomePage = () => {
   };
 
   return (
-    <div className="space-y-16 pb-12">
+    <div className="space-y-16 pb-16">
       
-      {/* 1. Hero Banner */}
+      {/* 1. HERO BANNER */}
       <section className="relative overflow-hidden bg-gradient-to-b from-sage-100/70 via-sage-50/40 to-surface pt-16 pb-20 px-4 sm:px-6 lg:px-8 border-b border-sage-100/50">
         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
           
@@ -68,38 +77,20 @@ export const HomePage = () => {
               Discover verified cameras, vintage apparel, modern tech, and home decor from trusted local sellers. Simple, fast, and eco-friendly.
             </p>
 
-            {/* Quick Hero Search Input */}
-            <form onSubmit={handleSearchSubmit} className="max-w-lg mx-auto lg:mx-0 relative flex items-center">
-              <input
-                type="text"
-                placeholder="Search film cameras, Levi's jackets, Keychron keyboards..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-12 pr-32 py-4 bg-white rounded-2xl border border-slate-200 shadow-lg text-sm focus:outline-none focus:ring-2 focus:ring-sage-500"
-              />
-              <Search className="w-5 h-5 text-slate-400 absolute left-4" />
-              <button
-                type="submit"
-                className="absolute right-2 px-5 py-2.5 rounded-xl bg-forest-800 hover:bg-forest-900 text-white text-xs font-bold transition-all shadow-sm"
-              >
-                Search
-              </button>
-            </form>
-
             <div className="flex items-center justify-center lg:justify-start gap-4 pt-2">
               <Link
                 to="/explore"
                 className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-sage-500 hover:bg-sage-600 text-white font-bold text-sm transition-all shadow-md hover:-translate-y-0.5"
               >
-                <span>Browse Catalog</span>
-                <ArrowRight className="w-4 h-4" />
+                <ShoppingBag className="w-4 h-4" />
+                <span>Start Shopping</span>
               </Link>
               <Link
                 to="/create-listing"
                 className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-white hover:bg-slate-50 text-slate-800 border border-slate-200 font-bold text-sm transition-all shadow-sm"
               >
                 <PlusCircle className="w-4 h-4 text-sage-600" />
-                <span>Start Selling</span>
+                <span>Sell an Item</span>
               </Link>
             </div>
           </div>
@@ -125,11 +116,32 @@ export const HomePage = () => {
         </div>
       </section>
 
-      {/* 2. Popular Categories Grid */}
+      {/* 2. SEARCH BAR */}
+      <section className="max-w-4xl mx-auto px-4 sm:px-6">
+        <form onSubmit={handleSearchSubmit} className="relative flex items-center shadow-lg rounded-2xl bg-white border border-slate-200 p-1.5">
+          <Search className="w-5 h-5 text-slate-400 absolute left-4" />
+          <input
+            type="text"
+            placeholder="Search film cameras, Levi's jackets, Keychron keyboards, brands, conditions..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-12 pr-32 py-3 bg-transparent text-sm focus:outline-none text-slate-800 placeholder-slate-400 font-medium"
+          />
+          <button
+            type="submit"
+            className="absolute right-2 px-6 py-2.5 rounded-xl bg-forest-800 hover:bg-forest-900 text-white text-xs font-bold transition-all shadow-sm flex items-center gap-1.5"
+          >
+            <Search className="w-3.5 h-3.5" />
+            <span>Search</span>
+          </button>
+        </form>
+      </section>
+
+      {/* 3. POPULAR CATEGORIES */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h2 className="text-2xl font-bold text-forest-900 tracking-tight">Explore Categories</h2>
+            <h2 className="text-2xl font-bold text-forest-900 tracking-tight">Popular Categories</h2>
             <p className="text-xs text-slate-500 mt-1">Browse pre-owned items by department</p>
           </div>
           <Link to="/explore" className="text-xs font-bold text-sage-600 hover:text-sage-700 flex items-center gap-1">
@@ -157,18 +169,37 @@ export const HomePage = () => {
         </div>
       </section>
 
-      {/* 3. Newest Available Products Showcase */}
+      {/* 4. FEATURED PRODUCTS */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <div className="flex items-center gap-2">
+              <Star className="w-5 h-5 text-amber-500 fill-amber-500" />
+              <h2 className="text-2xl font-bold text-forest-900 tracking-tight">Featured Deals</h2>
+            </div>
+            <p className="text-xs text-slate-500 mt-1">Handpicked quality items at exceptional prices</p>
+          </div>
+          <Link to="/explore" className="text-xs font-bold text-sage-600 hover:text-sage-700 flex items-center gap-1">
+            <span>Explore All</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+
+        <ProductGrid products={featuredProducts} loading={loading} onToast={showToast} />
+      </section>
+
+      {/* 5. NEWEST LISTINGS */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between mb-8">
           <div>
             <div className="flex items-center gap-2">
               <TrendingUp className="w-5 h-5 text-sage-600" />
-              <h2 className="text-2xl font-bold text-forest-900 tracking-tight">Fresh Available Listings</h2>
+              <h2 className="text-2xl font-bold text-forest-900 tracking-tight">Newest Listings</h2>
             </div>
-            <p className="text-xs text-slate-500 mt-1">Recently listed items ready for purchase</p>
+            <p className="text-xs text-slate-500 mt-1">Fresh arrivals just posted by community sellers</p>
           </div>
           <Link to="/explore" className="text-xs font-bold text-sage-600 hover:text-sage-700 flex items-center gap-1">
-            <span>See More</span>
+            <span>See Newest</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </div>
@@ -176,7 +207,22 @@ export const HomePage = () => {
         <ProductGrid products={newestProducts} loading={loading} onToast={showToast} />
       </section>
 
-      {/* 4. Recently Sold Showcase */}
+      {/* 6. AVAILABLE PRODUCTS */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="w-5 h-5 text-emerald-600" />
+              <h2 className="text-2xl font-bold text-forest-900 tracking-tight">Available Now</h2>
+            </div>
+            <p className="text-xs text-slate-500 mt-1">Ready for instant purchase and shipping</p>
+          </div>
+        </div>
+
+        <ProductGrid products={availableProducts} loading={loading} onToast={showToast} />
+      </section>
+
+      {/* 7. RECENTLY SOLD PRODUCTS */}
       {soldProducts.length > 0 && (
         <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
           <div className="flex items-center justify-between mb-8">
@@ -193,7 +239,7 @@ export const HomePage = () => {
         </section>
       )}
 
-      {/* 5. Sell Your Product Call-To-Action Banner */}
+      {/* 8. SELL YOUR PRODUCT CALL-TO-ACTION */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="bg-forest-900 rounded-3xl p-8 sm:p-12 text-white flex flex-col md:flex-row items-center justify-between gap-8 shadow-2xl relative overflow-hidden">
           <div className="space-y-4 max-w-lg text-center md:text-left z-10">

@@ -1,6 +1,6 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import { getWishlist, addToWishlist, removeFromWishlist } from '../services/userService';
+import { getWishlist, addToWishlist as apiAddToWishlist, removeFromWishlist as apiRemoveFromWishlist } from '../services/userService';
 
 export const WishlistContext = createContext();
 
@@ -39,31 +39,49 @@ export const WishlistProvider = ({ children }) => {
     }
   };
 
+  const addToWishlist = async (productId) => {
+    if (!isAuthenticated) return { success: false, message: 'Please log in to save items' };
+    if (wishlistIds.includes(productId)) return { success: true, action: 'already_added' };
+
+    try {
+      setWishlistIds(prev => [...prev, productId]);
+      const res = await apiAddToWishlist(productId);
+      if (res.success && res.wishlist) {
+        updateUserState({ ...user, wishlist: res.wishlist });
+      }
+      fetchWishlist();
+      return { success: true, action: 'added' };
+    } catch (err) {
+      console.error('[Add Wishlist Error]', err);
+      return { success: false, message: 'Failed to add to wishlist' };
+    }
+  };
+
+  const removeFromWishlist = async (productId) => {
+    if (!isAuthenticated) return { success: false, message: 'Please log in' };
+
+    try {
+      setWishlistIds(prev => prev.filter(id => id !== productId));
+      setWishlistItems(prev => prev.filter(item => item._id !== productId));
+      const res = await apiRemoveFromWishlist(productId);
+      if (res.success && res.wishlist) {
+        updateUserState({ ...user, wishlist: res.wishlist });
+      }
+      return { success: true, action: 'removed' };
+    } catch (err) {
+      console.error('[Remove Wishlist Error]', err);
+      return { success: false, message: 'Failed to remove from wishlist' };
+    }
+  };
+
   const toggleWishlist = async (productId) => {
     if (!isAuthenticated) return { success: false, message: 'Please log in to save items' };
 
     const isSaved = wishlistIds.includes(productId);
-    try {
-      if (isSaved) {
-        setWishlistIds(prev => prev.filter(id => id !== productId));
-        setWishlistItems(prev => prev.filter(item => item._id !== productId));
-        const res = await removeFromWishlist(productId);
-        if (res.success && res.wishlist) {
-          updateUserState({ ...user, wishlist: res.wishlist });
-        }
-        return { success: true, action: 'removed' };
-      } else {
-        setWishlistIds(prev => [...prev, productId]);
-        const res = await addToWishlist(productId);
-        if (res.success && res.wishlist) {
-          updateUserState({ ...user, wishlist: res.wishlist });
-        }
-        fetchWishlist();
-        return { success: true, action: 'added' };
-      }
-    } catch (err) {
-      console.error('[Toggle Wishlist Error]', err);
-      return { success: false, message: 'Failed to update wishlist' };
+    if (isSaved) {
+      return await removeFromWishlist(productId);
+    } else {
+      return await addToWishlist(productId);
     }
   };
 
@@ -74,9 +92,12 @@ export const WishlistProvider = ({ children }) => {
   return (
     <WishlistContext.Provider
       value={{
+        wishlist: wishlistItems,
         wishlistIds,
         wishlistItems,
         loading,
+        addToWishlist,
+        removeFromWishlist,
         toggleWishlist,
         isWishlisted,
         wishlistCount: wishlistIds.length,

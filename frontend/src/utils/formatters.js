@@ -48,5 +48,7 @@ export const SORT_OPTIONS = [
   { label: 'Newest First', value: 'newest' },
   { label: 'Oldest First', value: 'oldest' },
   { label: 'Price: Low to High', value: 'priceAsc' },
-  { label: 'Price: High to Low', value: 'priceDesc' }
+  { label: 'Price: High to Low', value: 'priceDesc' },
+  { label: 'Alphabetical (A–Z)', value: 'alpha' },
+  { label: 'Recently Updated', value: 'updated' }
 ];

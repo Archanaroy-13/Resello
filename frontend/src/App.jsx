@@ -15,6 +15,7 @@ import { MyListingsPage } from './pages/MyListingsPage';
 import { SellerProfilePage } from './pages/SellerProfilePage';
 import { WishlistPage } from './pages/WishlistPage';
 import { ProfilePage } from './pages/ProfilePage';
+import { DashboardPage } from './pages/DashboardPage';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { NotFoundPage } from './pages/NotFoundPage';
@@ -51,6 +52,14 @@ export function App() {
               />
 
               {/* Protected Seller / User Routes */}
+              <Route
+                path="dashboard"
+                element={
+                  <ProtectedRoute>
+                    <DashboardPage />
+                  </ProtectedRoute>
+                }
+              />
               <Route
                 path="create-listing"
                 element={

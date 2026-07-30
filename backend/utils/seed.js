@@ -1,15 +1,23 @@
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
+const path = require('path');
 const User = require('../models/User');
 const Product = require('../models/Product');
 
-dotenv.config({ path: __dirname + '/../.env' });
+dotenv.config({ path: path.join(__dirname, '../.env') });
 
 const seedDatabase = async () => {
   try {
-    const mongoUri = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/resello';
-    await mongoose.connect(mongoUri);
-    console.log('[Seed] Database connected for seeding...');
+    let mongoUri = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/resello';
+
+    if (mongoUri.startsWith('mongodb+srv://') && mongoUri.includes('/?') && !mongoUri.includes('.net/resello')) {
+      mongoUri = mongoUri.replace('.net/?', '.net/resello?');
+    } else if (mongoUri.startsWith('mongodb+srv://') && mongoUri.endsWith('.net/')) {
+      mongoUri = mongoUri + 'resello';
+    }
+
+    const conn = await mongoose.connect(mongoUri);
+    console.log(`[Seed] Database connected: ${conn.connection.host}`);
 
     // Clear existing collections
     await User.deleteMany();
@@ -20,6 +28,7 @@ const seedDatabase = async () => {
     const users = await User.create([
       {
         name: 'Sarah Connor',
+        username: 'sarahc',
         email: 'sarah@example.com',
         password: 'password123',
         avatar: { url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80' },
@@ -29,6 +38,7 @@ const seedDatabase = async () => {
       },
       {
         name: 'Alex Rivera',
+        username: 'alexr',
         email: 'alex@example.com',
         password: 'password123',
         avatar: { url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80' },
@@ -38,6 +48,7 @@ const seedDatabase = async () => {
       },
       {
         name: 'Marcus Vance',
+        username: 'marcusv',
         email: 'marcus@example.com',
         password: 'password123',
         avatar: { url: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=400&q=80' },
@@ -326,7 +337,7 @@ const seedDatabase = async () => {
     ];
 
     await Product.create(productsData);
-    console.log(`[Seed] Successfully created ${users.length} Users and ${productsData.length} Products!`);
+    console.log(`[Seed] Successfully created ${users.length} Users and ${productsData.length} Products in MongoDB!`);
     console.log('[Seed] Demo Credentials:');
     console.log(' - User 1: sarah@example.com / password123');
     console.log(' - User 2: alex@example.com / password123');

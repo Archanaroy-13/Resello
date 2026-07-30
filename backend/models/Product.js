@@ -55,6 +55,10 @@ const productSchema = new mongoose.Schema({
       },
       message: 'Product must contain between 3 and 10 images.'
     }
+  },
+  views: {
+    type: Number,
+    default: 0
   }
 }, {
   timestamps: true

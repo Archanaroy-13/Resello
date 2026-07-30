@@ -67,10 +67,6 @@ const userSchema = new mongoose.Schema({
   toObject: { virtuals: true }
 });
 
-// Single Indexes
-userSchema.index({ email: 1 });
-userSchema.index({ username: 1 });
-
 // Virtual relationship for productsUploaded
 userSchema.virtual('productsUploaded', {
   ref: 'Product',

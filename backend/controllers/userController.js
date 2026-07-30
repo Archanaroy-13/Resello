@@ -8,7 +8,7 @@ const getWishlist = async (req, res, next) => {
   try {
     const user = await User.findById(req.user._id).populate({
       path: 'wishlist',
-      populate: { path: 'seller', select: 'name avatar location' }
+      populate: { path: 'seller', select: 'name username avatar profileImage location joinedDate' }
     });
 
     res.status(200).json({
@@ -75,18 +75,27 @@ const removeFromWishlist = async (req, res, next) => {
 // @access  Public
 const getSellerProfile = async (req, res, next) => {
   try {
-    const seller = await User.findById(req.params.id).select('-password');
+    const seller = await User.findById(req.params.id).select('name username avatar profileImage location bio joinedDate createdAt');
     if (!seller) {
       return res.status(404).json({ success: false, message: 'Seller profile not found' });
     }
 
     const products = await Product.find({ seller: req.params.id })
-      .populate('seller', 'name avatar location')
+      .populate('seller', 'name username avatar profileImage location joinedDate')
       .sort({ status: 1, createdAt: -1 });
+
+    const totalListings = products.length;
+    const availableListings = products.filter(p => p.status === 'Available').length;
+    const soldListings = products.filter(p => p.status === 'Sold').length;
 
     res.status(200).json({
       success: true,
       seller,
+      stats: {
+        totalListings,
+        availableListings,
+        soldListings
+      },
       count: products.length,
       products
     });

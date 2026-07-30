@@ -13,7 +13,8 @@ import {
   Package,
   Menu,
   X,
-  ChevronDown
+  ChevronDown,
+  LayoutDashboard
 } from 'lucide-react';
 
 export const Navbar = () => {
@@ -132,6 +133,15 @@ export const Navbar = () => {
                       <p className="text-xs font-bold text-slate-800 truncate">{user?.name}</p>
                       <p className="text-[11px] text-slate-400 truncate">{user?.email}</p>
                     </div>
+
+                    <Link
+                      to="/dashboard"
+                      onClick={() => setDropdownOpen(false)}
+                      className="flex items-center gap-2.5 px-4 py-2 text-xs font-medium text-slate-700 hover:bg-sage-50 hover:text-sage-700 transition-colors"
+                    >
+                      <LayoutDashboard className="w-4 h-4 text-slate-400" />
+                      Dashboard
+                    </Link>
 
                     <Link
                       to="/my-listings"
@@ -254,6 +264,14 @@ export const Navbar = () => {
 
             {isAuthenticated ? (
               <>
+                <Link
+                  to="/dashboard"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="px-3 py-2 rounded-xl text-sm font-medium text-slate-700 hover:bg-slate-50 flex items-center justify-between"
+                >
+                  <span>User Dashboard</span>
+                  <LayoutDashboard className="w-4 h-4 text-slate-400" />
+                </Link>
                 <Link
                   to="/my-listings"
                   onClick={() => setMobileMenuOpen(false)}

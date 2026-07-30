@@ -1,11 +1,13 @@
 const express = require('express');
 const dotenv = require('dotenv');
+const path = require('path');
 const cors = require('cors');
+
+// Load environment variables with absolute path
+dotenv.config({ path: path.resolve(__dirname, '.env') });
+
 const connectDB = require('./config/db');
 const { errorHandler } = require('./middleware/errorMiddleware');
-
-// Load environment variables
-dotenv.config();
 
 // Connect to MongoDB
 connectDB();

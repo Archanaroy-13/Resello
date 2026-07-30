@@ -1,10 +1,30 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { CATEGORIES, CONDITIONS, SORT_OPTIONS } from '../../utils/formatters';
-import { Filter, RotateCcw, Search, DollarSign } from 'lucide-react';
+import { Filter, RotateCcw, Search, DollarSign, Tag, Award, Sparkles } from 'lucide-react';
 
 export const ProductFilterBar = ({ filters, onChange, onReset }) => {
+  const [showSuggestions, setShowSuggestions] = useState(false);
+
   const handleInputChange = (field, value) => {
     onChange({ ...filters, [field]: value, page: 1 });
+  };
+
+  // Live suggestions helper
+  const popularSuggestions = [
+    { label: 'Vintage Film Camera 35mm', type: 'Title' },
+    { label: 'Levi\'s Denim Jacket', type: 'Brand' },
+    { label: 'Keychron Mechanical Keyboard', type: 'Title' },
+    { label: 'Electronics', type: 'Category' },
+    { label: 'Fashion', type: 'Category' }
+  ];
+
+  const filteredSuggestions = filters.search
+    ? popularSuggestions.filter(item => item.label.toLowerCase().includes(filters.search.toLowerCase()))
+    : [];
+
+  const handleSelectSuggestion = (suggestionLabel) => {
+    handleInputChange('search', suggestionLabel);
+    setShowSuggestions(false);
   };
 
   return (
@@ -23,19 +43,45 @@ export const ProductFilterBar = ({ filters, onChange, onReset }) => {
         </button>
       </div>
 
-      {/* Search Input */}
-      <div>
+      {/* Search Input with Live Suggestions */}
+      <div className="relative">
         <label className="block text-xs font-semibold text-slate-700 mb-2">Keyword Search</label>
         <div className="relative">
           <input
             type="text"
-            placeholder="Search by title, brand, material..."
+            placeholder="Search title, brand, category..."
             value={filters.search || ''}
-            onChange={(e) => handleInputChange('search', e.target.value)}
+            onChange={(e) => {
+              handleInputChange('search', e.target.value);
+              setShowSuggestions(true);
+            }}
+            onFocus={() => setShowSuggestions(true)}
+            onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
             className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-sage-400 focus:bg-white"
           />
           <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
         </div>
+
+        {/* Live Search Suggestions Dropdown */}
+        {showSuggestions && filteredSuggestions.length > 0 && (
+          <div className="absolute z-20 left-0 right-0 top-full mt-1 bg-white rounded-2xl border border-slate-200 shadow-xl overflow-hidden py-1">
+            <div className="px-3 py-1 text-[10px] font-bold uppercase text-slate-400 border-b border-slate-100 flex items-center gap-1">
+              <Sparkles className="w-3 h-3 text-sage-500" />
+              <span>Search Suggestions</span>
+            </div>
+            {filteredSuggestions.map((item, idx) => (
+              <button
+                key={idx}
+                type="button"
+                onClick={() => handleSelectSuggestion(item.label)}
+                className="w-full px-3 py-2 text-left hover:bg-slate-50 flex items-center justify-between text-xs transition-colors"
+              >
+                <span className="font-medium text-slate-800">{item.label}</span>
+                <span className="text-[10px] text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">{item.type}</span>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Category Dropdown */}
@@ -70,6 +116,18 @@ export const ProductFilterBar = ({ filters, onChange, onReset }) => {
             </option>
           ))}
         </select>
+      </div>
+
+      {/* Brand Filter Input */}
+      <div>
+        <label className="block text-xs font-semibold text-slate-700 mb-2">Brand</label>
+        <input
+          type="text"
+          placeholder="e.g. Canon, Levi's, Apple..."
+          value={filters.brand || ''}
+          onChange={(e) => handleInputChange('brand', e.target.value)}
+          className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-sage-400"
+        />
       </div>
 
       {/* Price Range */}

@@ -36,6 +36,11 @@ class ApiFeatures {
       this.query = this.query.find({ condition: queryObj.condition });
     }
 
+    // Brand filter
+    if (queryObj.brand && queryObj.brand !== 'All') {
+      this.query = this.query.find({ brand: { $regex: queryObj.brand, $options: 'i' } });
+    }
+
     // Status filter (e.g. availableOnly)
     if (this.queryString.availableOnly === 'true') {
       this.query = this.query.find({ status: 'Available' });
@@ -67,6 +72,12 @@ class ApiFeatures {
         break;
       case 'priceDesc':
         sortOption = { status: 1, price: -1, createdAt: -1 };
+        break;
+      case 'alpha':
+        sortOption = { status: 1, title: 1 };
+        break;
+      case 'updated':
+        sortOption = { status: 1, updatedAt: -1 };
         break;
       case 'newest':
       default:

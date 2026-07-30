@@ -20,7 +20,10 @@ import {
   MessageSquare,
   ArrowLeft,
   Edit,
-  UserCheck
+  UserCheck,
+  Share2,
+  Eye,
+  AtSign
 } from 'lucide-react';
 
 export const ProductDetailPage = () => {
@@ -51,9 +54,9 @@ export const ProductDetailPage = () => {
         setProduct(res.data);
         setActiveImageIndex(0);
 
-        // Fetch related products in same category
+        // Fetch related products in same category excluding current product
         if (res.data.category) {
-          const relRes = await getProducts({ category: res.data.category, limit: 4 });
+          const relRes = await getProducts({ category: res.data.category, limit: 6 });
           if (relRes.success) {
             setRelatedProducts(relRes.data.filter(item => item._id !== res.data._id));
           }
@@ -121,11 +124,18 @@ export const ProductDetailPage = () => {
     }
   };
 
+  const handleShare = () => {
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(window.location.href);
+      if (showToast) showToast('Product link copied to clipboard!', 'success');
+    }
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-12">
       
-      {/* Back Button */}
-      <div>
+      {/* Back Button & Views Counter */}
+      <div className="flex items-center justify-between">
         <button
           onClick={() => navigate(-1)}
           className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-forest-800 transition-colors"
@@ -133,6 +143,11 @@ export const ProductDetailPage = () => {
           <ArrowLeft className="w-4 h-4" />
           <span>Back to Marketplace</span>
         </button>
+
+        <div className="flex items-center gap-1.5 text-xs text-slate-400 font-medium">
+          <Eye className="w-4 h-4 text-slate-400" />
+          <span>{product.views || 1} Views</span>
+        </div>
       </div>
 
       {/* Main Product Section */}
@@ -238,6 +253,15 @@ export const ProductDetailPage = () => {
               </button>
             )}
 
+            {/* Share Button */}
+            <button
+              onClick={handleShare}
+              className="p-3.5 rounded-2xl border border-slate-200 bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-all shadow-sm"
+              title="Share listing"
+            >
+              <Share2 className="w-5 h-5" />
+            </button>
+
             {/* Wishlist Heart Button */}
             <button
               onClick={handleWishlistToggle}
@@ -277,7 +301,7 @@ export const ProductDetailPage = () => {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <img
-                    src={product.seller.avatar?.url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200'}
+                    src={product.seller.profileImage?.url || product.seller.avatar?.url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200'}
                     alt={product.seller.name}
                     className="w-12 h-12 rounded-full object-cover border border-slate-200"
                   />
@@ -287,8 +311,11 @@ export const ProductDetailPage = () => {
                       <UserCheck className="w-4 h-4 text-sage-600" />
                     </h4>
                     <p className="text-xs text-slate-400 flex items-center gap-1 mt-0.5">
-                      <MapPin className="w-3 h-3" />
-                      {product.seller.location || 'New York, NY'}
+                      <AtSign className="w-3 h-3 text-slate-300" />
+                      <span>{product.seller.username}</span>
+                      <span>•</span>
+                      <MapPin className="w-3 h-3 text-slate-300" />
+                      <span>{product.seller.location || 'New York, NY'}</span>
                     </p>
                   </div>
                 </div>
@@ -301,11 +328,12 @@ export const ProductDetailPage = () => {
                 </Link>
               </div>
 
-              {product.seller.bio && (
-                <p className="text-xs text-slate-500 italic bg-slate-50 p-3 rounded-xl">
-                  "{product.seller.bio}"
-                </p>
-              )}
+              <div className="flex items-center justify-between text-xs text-slate-400 border-t border-slate-100 pt-3">
+                <span className="flex items-center gap-1">
+                  <Calendar className="w-3.5 h-3.5 text-slate-300" />
+                  Member since {formatDate(product.seller.joinedDate || product.seller.createdAt)}
+                </span>
+              </div>
             </div>
           )}
 
@@ -315,7 +343,7 @@ export const ProductDetailPage = () => {
       {/* Related Products Section */}
       {relatedProducts.length > 0 && (
         <section className="pt-10 border-t border-slate-100">
-          <h3 className="text-xl font-bold text-forest-900 mb-6">More From {product.category}</h3>
+          <h3 className="text-xl font-bold text-forest-900 mb-6">Related Products in {product.category}</h3>
           <ProductGrid products={relatedProducts} onToast={showToast} />
         </section>
       )}
