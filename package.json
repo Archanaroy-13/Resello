@@ -1,0 +1,9 @@
+{
+  "name": "resello",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "build": "cd frontend && npm install && npm run build",
+    "postinstall": "node -e \"const fs=require('fs'),p=require('path');const bin=p.join(process.cwd(),'node_modules','.bin');if(!fs.existsSync(bin)){fs.mkdirSync(bin,{recursive:true});}fs.writeFileSync(p.join(bin,'react-scripts'),'#!/bin/sh\\nnpm run build\\n',{mode:0o755});\""
+  }
+}

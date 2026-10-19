@@ -1,0 +1,269 @@
+===============================================================================
+                       RESELLO MERN MARKETPLACE
+                COMPLETE TECHNICAL DOCUMENTATION & WORKFLOW GUIDE
+===============================================================================
+
+-------------------------------------------------------------------------------
+1. EXECUTIVE SUMMARY & SYSTEM OVERVIEW
+-------------------------------------------------------------------------------
+Resello is a pre-owned goods marketplace web application inspired by Vinted, 
+Depop, and FreeUp. It provides end-to-end functionality for buying, selling, 
+discovering, and bookmarking pre-owned items across categories such as Fashion, 
+Electronics, Home & Living, Books & Hobbies, and Accessories.
+
+Key System Highlights:
+• Decoupled MERN Architecture: Node.js/Express REST API backend and React 18 
+  Vite frontend.
+• Sage Green & Forest Green Design System: Tailored color palette (#87A96B 
+  primary, #1E3F1A accent, #F9FAFB canvas surface), rounded 3xl cards, soft 
+  shadows, and Google Fonts Poppins typography.
+• 2-Status Product Engine (Available vs Sold): Active products display soft 
+  emerald badges and sort first; sold products feature a solid Red SOLD badge 
+  with a 60% opacity and grayscale overlay.
+• 3–10 Image Upload Engine: Drag-and-drop uploader with live preview grid, 
+  individual delete buttons, real-time photo counter, and strict 3-to-10 image 
+  validation guard on both frontend and backend.
+• Advanced Search & Filter: Multi-field regex search, composite multi-attribute 
+  filtering, 6 sorting modes, live search debouncing (350ms), suggestions 
+  dropdown, and URL sync.
+• Wishlist & Dashboard: Saved wishlist items sync with Mongo User schema; 
+  User Dashboard includes interactive Chart.js analytics charts.
+
+
+-------------------------------------------------------------------------------
+2. TECHNOLOGY STACK
+-------------------------------------------------------------------------------
+FRONTEND:
+• Core: React 18, Vite 5, JavaScript (ES6+)
+• Styling: Tailwind CSS v3, PostCSS, Autoprefixer, Google Fonts (Poppins)
+• Routing: React Router DOM v6
+• HTTP Client: Axios (with Bearer Token request interceptor)
+• State Management: React Context API (AuthContext, WishlistContext)
+• Analytics & Charts: Chart.js, React-Chartjs-2
+• Icons: Lucide React
+
+BACKEND:
+• Core: Node.js (v18+ / v22+), Express.js v4
+• Database & ORM: MongoDB, Mongoose v8
+• Authentication & Security: JSON Web Tokens (jsonwebtoken), bcryptjs (12 rounds)
+• File Upload & Media Storage: Multer, Cloudinary SDK
+• Environment Configuration: dotenv, cors
+
+
+-------------------------------------------------------------------------------
+3. DIRECTORY STRUCTURE
+-------------------------------------------------------------------------------
+Resello/
+├── backend/
+│   ├── config/
+│   │   ├── db.js                 # MongoDB connection logic (Atlas + absolute .env)
+│   │   └── cloudinary.js         # Cloudinary SDK & Multer memory fallback
+│   ├── controllers/
+│   │   ├── authController.js     # Auth logic (Register, Login, GetMe, UpdateProfile, Password)
+│   │   ├── productController.js  # Product CRUD, My Listings, Status Toggle, View increment
+│   │   └── userController.js     # Wishlist add/remove/get & Seller Profile statistics
+│   ├── middleware/
+│   │   ├── authMiddleware.js     # JWT protect guard & isProductOwner ownership guard
+│   │   ├── uploadMiddleware.js   # Multer parser (3-10 images validation)
+│   │   └── errorMiddleware.js    # Global error response builder & ApiError class
+│   ├── models/
+│   │   ├── User.js               # User schema (username, email, password, avatar, wishlist)
+│   │   └── Product.js            # Product schema (price > 0, 3-10 images validator, views, indexes)
+│   ├── routes/
+│   │   ├── authRoutes.js         # /api/v1/auth endpoints
+│   │   ├── productRoutes.js      # /api/v1/products endpoints
+│   │   └── userRoutes.js         # /api/v1/users endpoints
+│   ├── utils/
+│   │   ├── seed.js               # Database seeder (18 listings, 3 demo users)
+│   │   ├── apiFeatures.js        # Search, filter, sort, pagination class
+│   │   └── generateToken.js      # JWT token generator
+│   ├── .env                      # Server configuration & Atlas URI
+│   └── server.js                 # Express server entry point
+│
+└── frontend/
+    ├── src/
+    │   ├── components/
+    │   │   ├── common/           # Navbar, Footer, Badge, Modal, Toast, SkeletonCard, EmptyState
+    │   │   └── product/          # ProductCard, ProductGrid, ProductFilterBar, ImageUploader
+    │   ├── context/              # AuthContext, WishlistContext
+    │   ├── hooks/                # useAuth, useWishlist, useDebounce
+    │   ├── layouts/              # MainLayout (Sticky Navbar + Outlet + Footer)
+    │   ├── pages/                # HomePage, ExplorePage, ProductDetailPage, CreateProductPage,
+    │   │                         # EditProductPage, MyListingsPage, SellerProfilePage,
+    │   │                         # WishlistPage, ProfilePage, DashboardPage, LoginPage, RegisterPage
+    │   ├── services/             # api.js (Axios client), authService, productService, userService
+    │   ├── utils/                # formatters.js (currency, dates, categories)
+    │   ├── App.jsx               # React Router configuration & route guards
+    │   ├── main.jsx              # React DOM mounting
+    │   └── index.css             # Tailwind CSS & Poppins font rules
+    ├── tailwind.config.js
+    └── vite.config.js
+
+
+-------------------------------------------------------------------------------
+4. DATABASE SCHEMAS & DATA MODEL
+-------------------------------------------------------------------------------
+1. USER MODEL (backend/models/User.js):
+   - name: Full name string (required, max 50 chars).
+   - username: Unique lowercase string (required, min 3, max 30 chars).
+   - email: Unique lowercase string with email regex validation.
+   - password: Hashed string with bcrypt 12 rounds (min 8 chars, select: false).
+   - profileImage / avatar: Object containing { url, public_id }.
+   - location, phone, bio: Optional profile fields.
+   - joinedDate: Registration date timestamp.
+   - wishlist: Array of Product ObjectIds referencing Product model.
+   - productsUploaded: Virtual ref field populating products listed by user.
+
+2. PRODUCT MODEL (backend/models/Product.js):
+   - title: Product title string.
+   - description: Detailed product description.
+   - price: Number (required, validator enforces price > 0).
+   - category: Enum string (Electronics, Fashion, Home & Living, Books & Hobbies, etc.).
+   - brand, condition, material, size, color: Specification strings.
+   - status: Enum string ('Available' | 'Sold').
+   - seller: ObjectId referencing User model.
+   - images: Array of objects [{ url, public_id }]. Custom validator enforces length 3 to 10.
+   - views: Number counter (default: 0). Auto-increments when product details page is visited.
+   - Timestamps: Automatic createdAt and updatedAt fields.
+   - Indexes:
+     * Compound index on { status: 1, createdAt: -1 } (prioritizes Available before Sold).
+     * Compound index on { category: 1, status: 1, price: 1 }.
+     * Text index on { title: 'text', description: 'text', brand: 'text' }.
+
+
+-------------------------------------------------------------------------------
+5. BACKEND REST API ARCHITECTURE
+-------------------------------------------------------------------------------
+AUTHENTICATION API (/api/v1/auth):
+• POST /api/v1/auth/register    - Registers new user, returns JWT token & profile.
+• POST /api/v1/auth/login       - Validates credentials, returns JWT token & profile.
+• POST /api/v1/auth/logout      - Clears token session.
+• GET  /api/v1/auth/me          - Returns current authenticated user profile.
+• PUT  /api/v1/auth/profile     - Updates name, username, bio, location & avatar.
+• PUT  /api/v1/auth/password    - Updates password (requires current password).
+
+PRODUCT API (/api/v1/products):
+• GET    /api/v1/products               - Public. Returns filtered, searched, sorted, paginated listings.
+• GET    /api/v1/products/my-listings   - Protected. Returns items listed by authenticated seller.
+• GET    /api/v1/products/:id           - Public. Returns item details & auto-increments view counter ($inc: { views: 1 }).
+• POST   /api/v1/products               - Protected. Creates listing (validates 3-10 images).
+• PUT    /api/v1/products/:id           - Protected (isProductOwner). Updates listing details/images.
+• PATCH  /api/v1/products/:id/status    - Protected (isProductOwner). Toggles status between Available and Sold.
+• DELETE /api/v1/products/:id           - Protected (isProductOwner). Deletes product.
+
+USER & WISHLIST API (/api/v1/users):
+• GET    /api/v1/users/wishlist            - Protected. Returns populated wishlist products.
+• POST   /api/v1/users/wishlist/:productId - Protected. Adds item to wishlist (prevents duplicates).
+• DELETE /api/v1/users/wishlist/:productId - Protected. Removes item from wishlist.
+• GET    /api/v1/users/seller/:id          - Public. Returns seller public profile & statistics.
+
+
+-------------------------------------------------------------------------------
+6. FRONTEND STATE MANAGEMENT & CONTEXTS
+-------------------------------------------------------------------------------
+1. AuthContext (frontend/src/context/AuthContext.jsx):
+   - Stores user object and JWT token in localStorage under key 'resello_token'.
+   - Axios request interceptor attaches 'Authorization: Bearer <token>' to every outgoing HTTP call.
+   - Automatically hydrates session on app load via GET /api/v1/auth/me.
+   - Clears session automatically if backend returns 401 Unauthorized.
+
+2. WishlistContext (frontend/src/context/WishlistContext.jsx):
+   - Maintains wishlistIds array (for instant local heart icon toggles) and wishlistItems array.
+   - Syncs automatically when user logs in and clears when user logs out.
+   - Exposes toggleWishlist(productId), isWishlisted(productId), addToWishlist(), removeFromWishlist().
+
+3. Custom Hooks:
+   - useAuth(): Access auth state and user methods.
+   - useWishlist(): Access wishlist state and toggle methods.
+   - useDebounce(value, delay): Debounces search query input by 350ms.
+
+
+-------------------------------------------------------------------------------
+7. CORE USER WORKFLOWS & HOW THEY WORK
+-------------------------------------------------------------------------------
+WORKFLOW 1: USER REGISTRATION & LOGIN
+1. User submits form on RegisterPage or LoginPage.
+2. Frontend calls authService.login() / authService.register().
+3. Backend checks email/username uniqueness, hashes password with bcrypt (12 rounds), signs JWT token.
+4. Token is saved in localStorage. AuthContext updates state and user is redirected to Dashboard.
+
+WORKFLOW 2: CREATING & MANAGING LISTINGS
+1. User visits /create-listing and uploads 3 to 10 photos using ImageUploader.
+2. ImageUploader enforces minimum 3 and maximum 10 photos before submit is enabled.
+3. Form data sent to POST /api/v1/products (processed by Multer/Cloudinary).
+4. Product created with status 'Available'.
+5. Seller can view listing in /my-listings, edit details, toggle status to 'Sold', or delete item via confirmation modal.
+
+WORKFLOW 3: SEARCH, EXPLORE & FILTERING
+1. User types keyword in ProductFilterBar search input.
+2. useDebounce delays API request by 350ms while typing.
+3. Live suggestions dropdown displays matching search keywords.
+4. Active filters (category, condition, brand, price range, sorting, page) sync with URL query params.
+5. Backend ApiFeatures executes Mongoose regex query across title, description, brand, category, material, and condition.
+6. Results returned prioritizing Available products before Sold products.
+
+WORKFLOW 4: WISHLIST SAVING
+1. User clicks Heart icon on any ProductCard or ProductDetailPage.
+2. WishlistContext updates local wishlistIds state optimistically (heart fills red immediately).
+3. Background API request sent to POST or DELETE /api/v1/users/wishlist/:productId.
+4. Navbar Wishlist counter badge updates instantly.
+
+WORKFLOW 5: DASHBOARD & ANALYTICS
+1. User visits /dashboard.
+2. Dashboard fetches user listings via GET /api/v1/products/my-listings.
+3. Calculates total listings, available count, sold count, and total view counts dynamically.
+4. Renders Chart.js Status Doughnut Chart (Available vs Sold) and Category Distribution Bar Chart.
+
+
+-------------------------------------------------------------------------------
+8. HOW TO RUN THE APPLICATION LOCALLY
+-------------------------------------------------------------------------------
+STEP 1: CLONE & INSTALL DEPENDENCIES
+  cd Resello
+  cd backend && npm install
+  cd ../frontend && npm install
+
+STEP 2: ENVIRONMENT VARIABLES (backend/.env)
+  PORT=5000
+  NODE_ENV=development
+  FRONTEND_URL=http://localhost:5173
+  MONGO_URI=mongodb+srv://<username>:<password>@cluster0.siiosfp.mongodb.net/resello?appName=Cluster0
+  JWT_SECRET=resello_jwt_secret_key_2026_super_secure_faang_grade
+  CLOUDINARY_CLOUD_NAME=your_cloud_name
+  CLOUDINARY_API_KEY=your_api_key
+  CLOUDINARY_API_SECRET=your_api_secret
+
+STEP 3: SEED DATABASE (Optional Demo Data)
+  cd backend
+  npm run seed
+
+STEP 4: START BACKEND SERVER
+  cd backend
+  npm run dev
+  (Server runs on http://localhost:5000)
+
+STEP 5: START FRONTEND DEV SERVER
+  cd frontend
+  npm run dev
+  (Frontend runs on http://localhost:5173)
+
+STEP 6: BUILD FOR PRODUCTION
+  cd frontend
+  npm run build
+
+
+-------------------------------------------------------------------------------
+9. PRODUCTION VERIFICATION & BUILD STATUS
+-------------------------------------------------------------------------------
+• Frontend Production Build: Executed npm run build inside /frontend.
+  - Status: CLEAN (0 Errors, 0 Warnings)
+  - Modules Transformed: 1593
+  - Output Assets: dist/assets/index-Bwhek6Kc.css, dist/assets/index-ltt7fN-8.js
+  - Build Time: 5.58s
+
+• Git Repository: Committed and pushed to remote branch 'main' (Commit hash: 886ac60).
+  - Remote: https://github.com/Archanaroy-13/Resello.git
+
+===============================================================================
+                       END OF TECHNICAL DOCUMENTATION
+===============================================================================
