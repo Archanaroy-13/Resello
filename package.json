@@ -2,8 +2,12 @@
   "name": "resello",
   "private": true,
   "version": "1.0.0",
+  "bin": {
+    "react-scripts": "./bin/react-scripts.cjs"
+  },
   "scripts": {
     "build": "cd frontend && npm install && npm run build",
+    "react-scripts": "node ./bin/react-scripts.cjs",
     "postinstall": "node -e \"const fs=require('fs'),p=require('path');const bin=p.join(process.cwd(),'node_modules','.bin');if(!fs.existsSync(bin)){fs.mkdirSync(bin,{recursive:true});}fs.writeFileSync(p.join(bin,'react-scripts'),'#!/bin/sh\\nnpm run build\\n',{mode:0o755});\""
   }
 }
