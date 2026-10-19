@@ -9,9 +9,6 @@ dotenv.config({ path: path.resolve(__dirname, '.env') });
 const connectDB = require('./config/db');
 const { errorHandler } = require('./middleware/errorMiddleware');
 
-// Connect to MongoDB
-connectDB();
-
 const app = express();
 
 // CORS configuration
@@ -26,7 +23,7 @@ app.use(cors({
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
-      callback(null, true); // Permissive CORS for dev setup
+      callback(null, true); // Permissive CORS for dev & production setup
     }
   },
   credentials: true
@@ -35,6 +32,23 @@ app.use(cors({
 // Body Parsers
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Middleware to ensure DB connection is ready before handling API requests
+app.use(async (req, res, next) => {
+  // Allow health check without DB
+  if (req.path === '/api/v1/health') {
+    return next();
+  }
+  try {
+    await connectDB();
+    next();
+  } catch (error) {
+    return res.status(503).json({
+      success: false,
+      message: `Database connection unavailable: ${error.message}. Please verify your MongoDB Atlas connection string in Vercel environment variables.`
+    });
+  }
+});
 
 // API Health Check
 app.get('/api/v1/health', (req, res) => {
@@ -50,8 +64,8 @@ app.use('/api/v1/auth', require('./routes/authRoutes'));
 app.use('/api/v1/products', require('./routes/productRoutes'));
 app.use('/api/v1/users', require('./routes/userRoutes'));
 
-// 404 Route Handler
-app.use('*', (req, res) => {
+// 404 Route Handler for unmatched API paths
+app.use('/api/*', (req, res) => {
   res.status(404).json({
     success: false,
     message: `API Route ${req.originalUrl} not found`
@@ -63,6 +77,11 @@ app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
-  console.log(`[Server] Resello Express backend listening on http://localhost:${PORT} in ${process.env.NODE_ENV || 'development'} mode`);
-});
+// Only listen when running standalone (not inside Vercel serverless functions)
+if (!process.env.VERCEL && process.env.NODE_ENV !== 'test') {
+  app.listen(PORT, () => {
+    console.log(`[Server] Resello Express backend listening on http://localhost:${PORT} in ${process.env.NODE_ENV || 'development'} mode`);
+  });
+}
+
+module.exports = app;
